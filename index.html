@@ -8,6 +8,121 @@
 </head>
 <body>
     <div id="game-container"></div>
-    <script src="game.js"></script>
+    <script>
+        const config = {
+            type: Phaser.AUTO,
+            width: 800,
+            height: 600,
+            parent: 'game-container',
+            scene: {
+                create: create,
+                update: update
+            }
+        };
+
+        const game = new Phaser.Game(config);
+
+        let graphics, currentWord, timeLeft, score;
+        let wordText, timerText, scoreText, feedbackText;
+        let isDrawing = false;
+        const words = ['kat', 'hond', 'boom', 'huis', 'zon', 'bloem', 'auto', 'vliegtuig', 'vis', 'vogel'];
+        const colors = [0x000000, 0xff0000, 0x00ff00, 0x0000ff, 0xffff00, 0xff00ff, 0x00ffff];
+
+        function create() {
+            this.cameras.main.setBackgroundColor('#3498db');
+
+            graphics = this.add.graphics();
+
+            wordText = this.add.text(400, 50, '', { fontSize: '32px', fill: '#ffffff' }).setOrigin(0.5);
+            timerText = this.add.text(700, 30, '', { fontSize: '24px', fill: '#ffffff' }).setOrigin(1, 0.5);
+            scoreText = this.add.text(100, 30, 'Score: 0', { fontSize: '24px', fill: '#ffffff' }).setOrigin(0, 0.5);
+            feedbackText = this.add.text(400, 550, '', { fontSize: '24px', fill: '#ffffff' }).setOrigin(0.5);
+
+            const drawArea = this.add.rectangle(400, 300, 600, 300, 0xffffff).setOrigin(0.5);
+            drawArea.setInteractive();
+            drawArea.on('pointerdown', startDrawing, this);
+            drawArea.on('pointermove', draw, this);
+            drawArea.on('pointerup', stopDrawing, this);
+
+            colors.forEach((color, index) => {
+                const button = this.add.circle(50 + index * 60, 500, 20, color);
+                button.setInteractive();
+                button.on('pointerdown', () => {
+                    graphics.lineStyle(4, color);
+                });
+            });
+
+            this.add.text(700, 500, 'Wis', { fontSize: '24px', fill: '#ffffff' })
+                .setOrigin(1, 0.5)
+                .setInteractive()
+                .on('pointerdown', clearCanvas, this);
+
+            const guessButton = this.add.text(400, 450, 'Raad', { fontSize: '24px', fill: '#ffffff' })
+                .setOrigin(0.5)
+                .setInteractive()
+                .on('pointerdown', submitGuess, this);
+
+            score = 0;
+            startNewRound();
+        }
+
+        function update() {
+            if (timeLeft > 0) {
+                timeLeft -= 1/60;
+                timerText.setText(`Tijd: ${Math.ceil(timeLeft)}`);
+            } else {
+                endRound();
+            }
+        }
+
+        function startNewRound() {
+            currentWord = getRandomWord();
+            timeLeft = 60;
+            wordText.setText(`Teken: ${currentWord}`);
+            clearCanvas();
+        }
+
+        function startDrawing(pointer) {
+            isDrawing = true;
+            graphics.beginPath();
+            graphics.moveTo(pointer.x, pointer.y);
+        }
+
+        function draw(pointer) {
+            if (!isDrawing) return;
+            graphics.lineTo(pointer.x, pointer.y);
+            graphics.stroke();
+        }
+
+        function stopDrawing() {
+            isDrawing = false;
+        }
+
+        function clearCanvas() {
+            graphics.clear();
+            graphics.lineStyle(4, 0x000000);
+        }
+
+        function submitGuess() {
+            const guess = prompt("Raad het woord:");
+            if (guess && guess.toLowerCase() === currentWord.toLowerCase()) {
+                feedbackText.setText('Correct!');
+                score += Math.ceil(timeLeft);
+                scoreText.setText(`Score: ${score}`);
+                startNewRound();
+            } else {
+                feedbackText.setText('Probeer opnieuw!');
+            }
+        }
+
+        function endRound() {
+            feedbackText.setText(`Tijd voorbij! Het woord was: ${currentWord}`);
+            startNewRound();
+        }
+
+        function getRandomWord() {
+            return words[Math.floor(Math.random() * words.length)];
+        }
+    </script>
 </body>
 </html>
